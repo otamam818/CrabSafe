@@ -24,40 +24,79 @@ export const OptionBuilder = {
 }
 
 // The Result Type, modeled after rust's error type
-export type Err<T> = { variant: 'Err', kind: string, unwrap: () => T | never }
+export type Err<T> = { variant: 'Err', errKind: string, unwrap: () => T | never }
 export type Ok<T> = { variant: 'Ok', value: T, unwrap: () => T }
-export type Result<T, K /* K = kind */> = Ok<T> | Err<K>;
-// A result that shows the message
-export type IOResult<T> = Result<T, string>;
+export type Result<T, K extends string = string> = Ok<T> | Err<K>;
 
-export const IOResultBuilder = {
-  err: function giveErr<T>(message: string): IOResult<T> {
+export const ResultBuilder = {
+  err: function giveErr<T, U>(message: string, dbgMessage?: U): Result<T> {
     return {
       variant: 'Err',
-      kind: message,
-      unwrap: () => { throw new Error(message) }
+      errKind: message,
+      unwrap: () => { throw new Error(message) },
+      ...(dbgMessage ? dbgMessage: dbgMessage)
     }
   },
-  ok: function makeSome<T>(value: T): IOResult<T> {
+
+  ok: function makeSome<T, U>(value: T, dbgMessage?: U): Result<T> {
     return {
       variant: 'Ok',
       value,
-      unwrap: () => value
+      unwrap: () => value,
+      ...(dbgMessage ? dbgMessage: dbgMessage)
     };
   }
 }
 
 export const parsers = {
-  parseHtml: function parseHTMLString_rs(htmlString: string): IOResult<string> {
+  parseHtml: function parseHTMLString_rs(htmlString: string): Result<Document> {
     const parser = new DOMParser();
     const foundDoc = parser.parseFromString(htmlString, "text/html");
     const errorNode = foundDoc.querySelector("parsererror");
 
     if (errorNode) {
-      return IOResultBuilder.err("InvalidHTML")
+      return ResultBuilder.err("InvalidHTML")
     }
-    return IOResultBuilder.ok(htmlString);
+
+    return ResultBuilder.ok(foundDoc);
+  },
+
+  parseJSON: function parseJSONString_rs<T>(jsonString: string): Result<T> {
+    try {
+      const parsedData = JSON.parse(jsonString) as T;
+
+      return ResultBuilder.ok(parsedData);
+    } catch (error) {
+      // Handle parsing errors
+      let message = typeof error === 'string' ? error : JSON.stringify(error);
+      return ResultBuilder.err(message); // or you can return an error, throw an exception, etc.
+    }
   }
+}
+
+type FetchRes<T> = Result<T, 'ResponseError' | 'FetchError'>;
+export const net = {
+    fetch: async function fetchData<T>(url: string, mode: 'String' | 'JSON' = 'JSON'): Promise<FetchRes<T>> {
+        try {
+          // Attempt to fetch data from the provided URL
+          const response = await fetch(url);
+          // Check if the response status is OK (status code 200-299)
+          if (!response.ok) {
+            return ResultBuilder.err('ResponseError') as FetchRes<T>;
+          }
+
+          // Attempt to parse the response body
+          const data = match( mode, {
+            'JSON': async () => await response.json(),
+            'String': async () => await response.text()
+          })
+          
+          return ResultBuilder.ok(data) as FetchRes<T>;
+        } catch (error) {
+          const finErr = ResultBuilder.err('FetchError', error);
+          return finErr as FetchRes<T>;
+        }
+    }
 }
 
 export function panic(errorMessage: string): never {
@@ -68,14 +107,14 @@ export function match<T extends string, R = void>(key: T, cases: Record<T, () =>
   return cases[key]();
 }
 
-export function capitalizeFirstLetter(str: string): IOResult<string> {
+export function capitalizeFirstLetter(str: string): Result<string> {
   // Check if the input is a valid string
   if (typeof str !== 'string') {
-    return IOResultBuilder.err('Invalid input');
+    return ResultBuilder.err('Invalid input');
   }
   // Check if the input is an empty string
   if (str.length === 0) {
-    return IOResultBuilder.ok('');
+    return ResultBuilder.ok('');
   }
 
   // Get the first character of the input and convert it to uppercase
@@ -83,5 +122,5 @@ export function capitalizeFirstLetter(str: string): IOResult<string> {
   // Get the rest of the input and keep it as it is
   let rest = str.slice(1);
   // Return the concatenation of the first character and the rest
-  return IOResultBuilder.ok(firstChar + rest);
+  return ResultBuilder.ok(firstChar + rest);
 }
