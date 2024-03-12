@@ -2,6 +2,10 @@
  * @fileoverview Make interfaces with the rust side of things that are
  *               statically checked in compiletime
  */
+
+// NOTE: Remove this if it's running in client-side/non-deno code
+import { DOMParser, Document } from "https://deno.land/x/deno_dom@v0.1.45/deno-dom-wasm.ts";
+
 // A new type of option, better suited for the match function in this file
 export type NoneT<T> = { variant: 'None', unwrap: () => T | never }
 export type SomeT<T> = { variant: 'Some', value: T, unwrap: () => T }
@@ -16,7 +20,7 @@ export const OptionBuilder = {
   },
   some: function makeSome<T>(value: T): OptionT<T> {
     return {
-      variant: 'Some' as 'Some',
+      variant: 'Some' as const,
       value,
       unwrap: () => value
     };
@@ -24,9 +28,9 @@ export const OptionBuilder = {
 }
 
 // The Result Type, modeled after rust's error type
-export type Err<T> = { variant: 'Err', errKind: string, unwrap: () => T | never }
+export type Err<T, K> = { variant: 'Err', errKind: K, unwrap: () => T | never }
 export type Ok<T> = { variant: 'Ok', value: T, unwrap: () => T }
-export type Result<T, K extends string = string> = Ok<T> | Err<K>;
+export type Result<T, K extends string = string> = Ok<T> | Err<T, K>;
 
 export const ResultBuilder = {
   err: function giveErr<T, U>(message: string, dbgMessage?: U): Result<T> {
@@ -52,6 +56,9 @@ export const parsers = {
   parseHtml: function parseHTMLString_rs(htmlString: string): Result<Document> {
     const parser = new DOMParser();
     const foundDoc = parser.parseFromString(htmlString, "text/html");
+    if (!foundDoc) {
+        return ResultBuilder.err("InvalidHTML");
+    }
     const errorNode = foundDoc.querySelector("parsererror");
 
     if (errorNode) {
@@ -68,7 +75,7 @@ export const parsers = {
       return ResultBuilder.ok(parsedData);
     } catch (error) {
       // Handle parsing errors
-      let message = typeof error === 'string' ? error : JSON.stringify(error);
+      const message = typeof error === 'string' ? error : JSON.stringify(error);
       return ResultBuilder.err(message); // or you can return an error, throw an exception, etc.
     }
   }
@@ -118,9 +125,9 @@ export function capitalizeFirstLetter(str: string): Result<string> {
   }
 
   // Get the first character of the input and convert it to uppercase
-  let firstChar = str[0].toUpperCase();
+  const firstChar = str[0].toUpperCase();
   // Get the rest of the input and keep it as it is
-  let rest = str.slice(1);
+  const rest = str.slice(1);
   // Return the concatenation of the first character and the rest
   return ResultBuilder.ok(firstChar + rest);
 }
