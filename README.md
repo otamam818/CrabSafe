@@ -317,16 +317,16 @@ const url = 'http://nocodepanda.com/neofetch'
 function logRes() {
     const elephantRes = await net.fetch<Elephant>(url);
     if (elephantRes.variant === 'Ok') {
-        const elephantVals = JSON.stringify(elephantRes.unwrap());
-        console.log('Found elephant data with values:\n'.concat(elephantVals));
+        const {name, trunkLength} = elephantRes.unwrap();
+        console.log(`Found elephant named ${name} with trunkLength: ${trunkLength}cm`);
         return;
     }
 
     // Early returns allows Result types to be inferred more precisely.
     // In this case, it's inferred to be of type Result.Err<'FetchError' | `ResponseError`>
     const msg = match( elephantRes.errKind, {
-        'FetchError': () => 'could not be received',
-        'ResponseError': () => 'was received but did not give `.ok`',
+        FetchError: () => 'could not be received',
+        ResponseError: () => 'was received but did not give `.ok`',
     })
 
     const dbgMessage = `Could not fetch because the response ${msg}`

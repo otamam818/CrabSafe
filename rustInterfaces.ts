@@ -16,14 +16,14 @@ export const OptionBuilder = {
     return {
       variant: 'None',
       unwrap: () => { throw new Error("Value doesn't exist") }
-    }
+    } as NoneT<T>
   },
   some: function makeSome<T>(value: T): OptionT<T> {
     return {
       variant: 'Some' as const,
       value,
       unwrap: () => value
-    };
+    } as SomeT<T>;
   }
 }
 
@@ -33,7 +33,7 @@ export type Ok<T> = { variant: 'Ok', value: T, unwrap: () => T }
 export type Result<T, K extends string = string> = Ok<T> | Err<T, K>;
 
 export const ResultBuilder = {
-  err: function giveErr<T, U>(message: string, dbgMessage?: U): Result<T> {
+  err: function giveErr<T, U extends string, V = void>(message: U, dbgMessage?: V): Err<T, U> {
     return {
       variant: 'Err',
       errKind: message,
@@ -42,7 +42,7 @@ export const ResultBuilder = {
     }
   },
 
-  ok: function makeSome<T, U>(value: T, dbgMessage?: U): Result<T> {
+  ok: function makeSome<T, U = void>(value: T, dbgMessage?: U): Ok<T> {
     return {
       variant: 'Ok',
       value,
@@ -53,16 +53,16 @@ export const ResultBuilder = {
 }
 
 export const parsers = {
-  parseHtml: function parseHTMLString_rs(htmlString: string): Result<Document> {
+  parseHtml: function parseHTMLString_rs(htmlString: string): Result<Document, "ParseError" | "QueryError"> {
     const parser = new DOMParser();
     const foundDoc = parser.parseFromString(htmlString, "text/html");
     if (!foundDoc) {
-        return ResultBuilder.err("InvalidHTML");
+        return ResultBuilder.err("ParseError");
     }
     const errorNode = foundDoc.querySelector("parsererror");
 
     if (errorNode) {
-      return ResultBuilder.err("InvalidHTML")
+      return ResultBuilder.err("QueryError")
     }
 
     return ResultBuilder.ok(foundDoc);
@@ -81,7 +81,7 @@ export const parsers = {
   }
 }
 
-type FetchRes<T> = Result<T, 'ResponseError' | 'FetchError'>;
+type FetchRes<T> = Result<T, 'ResponseError' | 'FetchError' | 'TextParseError' | 'JsonParseError'>;
 export const net = {
     fetch: async function fetchData<T>(url: string, mode: 'String' | 'JSON' = 'JSON'): Promise<FetchRes<T>> {
         try {
@@ -89,19 +89,31 @@ export const net = {
           const response = await fetch(url);
           // Check if the response status is OK (status code 200-299)
           if (!response.ok) {
-            return ResultBuilder.err('ResponseError') as FetchRes<T>;
+            return ResultBuilder.err('ResponseError');
           }
 
           // Attempt to parse the response body
-          const data = match( mode, {
-            'JSON': async () => await response.json(),
-            'String': async () => await response.text()
-          })
-          
-          return ResultBuilder.ok(data) as FetchRes<T>;
+          type RemChecks = 'JsonParseError' | 'TextParseError';
+          return await match( mode, {
+            'JSON': async () => {
+                try {
+                    return ResultBuilder.ok<T>(await response.json() as T);
+                } catch {
+                    return ResultBuilder.err("JsonParseError" as RemChecks);
+                }
+            },
+            'String': async () => {
+                try {
+                    return ResultBuilder.ok<T>(await response.text() as T);
+                } catch {
+                    return ResultBuilder.err('TextParseError' as RemChecks);
+                }
+            }
+          });
         } catch (error) {
-          const finErr = ResultBuilder.err('FetchError', error);
-          return finErr as FetchRes<T>;
+          const State = 'FetchError' as const;
+          const finErr = ResultBuilder.err<T, typeof State>(State, error);
+          return finErr;
         }
     }
 }
@@ -112,6 +124,15 @@ export function panic(errorMessage: string): never {
 
 export function match<T extends string, R = void>(key: T, cases: Record<T, () => R>): R {
   return cases[key]();
+}
+
+export function matchVariant<T extends { variant: V }, V extends string, R = void>(
+  vart: T,
+  cases: { [P in T['variant']]: (arg: Omit<T, 'variant'> & Extract<T, { variant: P }>) => R }
+): R {
+  const { variant, ...remValues } = vart;
+  const fn = cases[variant];
+  return fn(remValues as Omit<T, 'variant'> & Extract<T, { variant: typeof variant }>);
 }
 
 export function capitalizeFirstLetter(str: string): Result<string> {

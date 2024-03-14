@@ -1,6 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.219.0/assert/mod.ts";
-import { OptionBuilder, match, parsers, net } from "./rustInterfaces.ts";
-import { Document } from "https://deno.land/x/deno_dom@v0.1.45/deno-dom-wasm.ts";
+import { OptionBuilder, matchVariant, match, parsers, net } from "./rustInterfaces.ts";
 
 Deno.test(function optionTest() {
     type CatFoods = 'Tuna' | 'Chicken' | 'Packeted Food'
@@ -69,7 +68,7 @@ Deno.test(function parsersTestHTML() {
     const msg = match( htmlRes.variant, {
         'Ok': () => {
             // Safe to unwrap over here due to being `Ok` checked
-            const doc = htmlRes.unwrap() as Document
+            const doc = htmlRes.unwrap();
             const message = doc.documentElement
                 ? doc.documentElement.textContent.trim()
                 : 'Nothing';
@@ -104,7 +103,6 @@ Deno.test(function parsersTestJSON() {
     assertEquals(msg, 'Jungle found with 3000 animals')
 });
 
-
 Deno.test(async function parsersTestFetchFail() {
     interface Elephant {
         name: string
@@ -114,16 +112,32 @@ Deno.test(async function parsersTestFetchFail() {
 
     const elephantRes = await net.fetch<Elephant>(url);
     if (elephantRes.variant === 'Ok') {
-        const elephantVals = JSON.stringify(elephantRes.unwrap());
-        console.log('Found elephant data with values:\n'.concat(elephantVals));
+        const {name, trunkLength: len} = elephantRes.unwrap();
+        console.log(`Elephant: ${name}, trunk length: ${len}cm`);
         return;
     }
 
     const msg = match( elephantRes.errKind, {
-        'FetchError': () => 'could not be received',
-        'ResponseError': () => 'was received but did not give `.ok`',
-    })
+        FetchError: () => 'could not be received',
+        ResponseError: () => 'was received but did not give `.ok`',
+        TextParseError: () => 'could not be parsed as text',
+        JsonParseError: () => 'could not be parsed as JSON'
+    });
 
     const dbgMessage = `Could not fetch because the response ${msg}`
     assertEquals(dbgMessage, "Could not fetch because the response could not be received")
+});
+
+Deno.test(function matchVariantWorks() {
+    type Shape =
+        { variant: 'Circle', radius: number }
+        | {variant: 'Rectangle', width: number};
+    
+    const chosenShape: Shape = { variant: 'Circle', radius: 20 };
+    const msg = matchVariant<Shape, 'Circle' | 'Rectangle', string>(chosenShape, {
+        Circle: ({radius}) => `circle with radius of ${radius}`,
+        Rectangle: ({width}) => `rectangle with width of ${width}`
+    });
+
+    assertEquals(msg, 'circle with radius of 20');
 });
