@@ -1,15 +1,15 @@
 import { assertEquals } from "https://deno.land/std@0.219.0/assert/mod.ts";
-import { OptionBuilder, matchVariant, match, parsers, net } from "./rustInterfaces.ts";
+import { OptionBuilder, vmatch, match, parsers, net } from "./rustInterfaces.ts";
 
 Deno.test(function optionTest() {
     type CatFoods = 'Tuna' | 'Chicken' | 'Packeted Food'
     let plate = OptionBuilder.none<CatFoods>(); // Provides OptionT.None instance
 
     function handleFood() {
-        const msg = match( plate.variant, {
+        const msg = vmatch( plate, {
             // Values with 'Some' will return the internal value when unwrapped
-            'Some': () => `Here eat your food: ${plate.unwrap()}`,
-            'None': () => 'No food here yet'
+            Some: ({ value: foodName }) => `Here eat your food: ${foodName}`,
+            None: () => 'No food here yet'
         })
 
         return msg
@@ -46,10 +46,10 @@ Deno.test(function matchTest() {
     // This is where the match statement happens, notice how you can get a return value unlike `switch` statements
     const instruction = match( pet.kind, {
         // You can either put a directly-addressed value
-        'Water': () => `Place ${pet.name} in the tank`,
+        Water: () => `Place ${pet.name} in the tank`,
 
         // Or you can write program logic to compute special cases
-        'Land': () => {
+        Land: () => {
             if (pet.name === 'Alex the cat') {
                 console.log('Legendary animal found!');
             }
@@ -65,16 +65,14 @@ Deno.test(function matchTest() {
 Deno.test(function parsersTestHTML() {
     const exampleHtmlString = '<h1> You are safe </h1>';
     const htmlRes = parsers.parseHtml(exampleHtmlString);
-    const msg = match( htmlRes.variant, {
-        'Ok': () => {
-            // Safe to unwrap over here due to being `Ok` checked
-            const doc = htmlRes.unwrap();
+    const msg = vmatch( htmlRes, {
+        Ok: ({value: doc}) => {
             const message = doc.documentElement
                 ? doc.documentElement.textContent.trim()
                 : 'Nothing';
             return `Found message: ${message}`;
         },
-        'Err': () => 'No message found'
+        Err: ({errKind}) => `Parsing failed. Reason: ${errKind}`
     })
 
     assertEquals(msg, 'Found message: You are safe')
@@ -92,12 +90,9 @@ Deno.test(function parsersTestJSON() {
         population: number
     }
     const jsonRes = parsers.parseJSON<Habitat>(jsonStr)
-    const msg = match( jsonRes.variant, {
-        'Ok': () => {
-            const {name, population} = jsonRes.unwrap();
-            return `${name} found with ${population} animals`;
-        },
-        'Err': () => 'Habitat parsing failed'
+    const msg = vmatch( jsonRes, {
+        Ok: ({ value: { name, population } }) => `${name} found with ${population} animals`,
+        Err: ({errKind}) => `Habitat parsing failed due to ${errKind}`
     })
 
     assertEquals(msg, 'Jungle found with 3000 animals')
@@ -124,20 +119,44 @@ Deno.test(async function parsersTestFetchFail() {
         JsonParseError: () => 'could not be parsed as JSON'
     });
 
-    const dbgMessage = `Could not fetch because the response ${msg}`
+    const dbgMessage = `Could not fetch because the response ${msg}`;
     assertEquals(dbgMessage, "Could not fetch because the response could not be received")
+});
+
+Deno.test(async function parsersTestFetchFailNoRinf() {
+    interface Elephant {
+        name: string
+        trunkLength: number
+    }
+    const url = 'http://nocodepanda.com/neofetch'
+
+    try {
+        const elephantRes = await fetch(url);
+        const {name, trunkLength: len} = await elephantRes.json() as Elephant;
+        console.log(`elephant: ${name}, trunk length: ${len}cm`);
+    } catch (error) {
+        // Expected to know what is going on here and supposedly handle
+        // every case without context with program logic here...
+
+        /* Elaborate string explaining itself only when the program crashes
+           this would be done using:
+
+           throw new Error(`Failed: ${error}`)
+         */
+        console.log(`Failed: ${error}`)
+    }
 });
 
 Deno.test(function matchVariantWorks() {
     type Shape =
         { variant: 'Circle', radius: number }
         | {variant: 'Rectangle', width: number};
-    
-    const chosenShape: Shape = { variant: 'Circle', radius: 20 };
-    const msg = matchVariant<Shape, 'Circle' | 'Rectangle', string>(chosenShape, {
+
+    const chosenShape = { variant: 'Rectangle', width: 20 } as Shape;
+    const msg = vmatch(chosenShape, {
         Circle: ({radius}) => `circle with radius of ${radius}`,
         Rectangle: ({width}) => `rectangle with width of ${width}`
     });
 
-    assertEquals(msg, 'circle with radius of 20');
+    assertEquals(msg, 'rectangle with width of 20');
 });

@@ -53,16 +53,16 @@ export const ResultBuilder = {
 }
 
 export const parsers = {
-  parseHtml: function parseHTMLString_rs(htmlString: string): Result<Document, "ParseError" | "QueryError"> {
+  parseHtml: function parseHTMLString_rs(htmlString: string): Result<Document, "StringParseFailed" | "QueryParseFailed"> {
     const parser = new DOMParser();
     const foundDoc = parser.parseFromString(htmlString, "text/html");
     if (!foundDoc) {
-        return ResultBuilder.err("ParseError");
+        return ResultBuilder.err("StringParseFailed");
     }
     const errorNode = foundDoc.querySelector("parsererror");
 
     if (errorNode) {
-      return ResultBuilder.err("QueryError")
+      return ResultBuilder.err("QueryParseFailed")
     }
 
     return ResultBuilder.ok(foundDoc);
@@ -93,20 +93,20 @@ export const net = {
           }
 
           // Attempt to parse the response body
-          type RemChecks = 'JsonParseError' | 'TextParseError';
+          type ParseErrors = 'JsonParseError' | 'TextParseError';
           return await match( mode, {
             'JSON': async () => {
                 try {
                     return ResultBuilder.ok<T>(await response.json() as T);
                 } catch {
-                    return ResultBuilder.err("JsonParseError" as RemChecks);
+                    return ResultBuilder.err("JsonParseError" as ParseErrors);
                 }
             },
             'String': async () => {
                 try {
                     return ResultBuilder.ok<T>(await response.text() as T);
                 } catch {
-                    return ResultBuilder.err('TextParseError' as RemChecks);
+                    return ResultBuilder.err('TextParseError' as ParseErrors);
                 }
             }
           });
@@ -126,13 +126,15 @@ export function match<T extends string, R = void>(key: T, cases: Record<T, () =>
   return cases[key]();
 }
 
-export function matchVariant<T extends { variant: V }, V extends string, R = void>(
-  vart: T,
-  cases: { [P in T['variant']]: (arg: Omit<T, 'variant'> & Extract<T, { variant: P }>) => R }
+export function vmatch<T extends { variant: V }, V extends string, R>(
+  v: T,
+  cases: { [K in T['variant']]: (arg: Extract<T, { variant: K }>) => R }
 ): R {
-  const { variant, ...remValues } = vart;
-  const fn = cases[variant];
-  return fn(remValues as Omit<T, 'variant'> & Extract<T, { variant: typeof variant }>);
+  const fn = cases[v.variant];
+  if (!fn) {
+    throw new Error(`Unmatched variant: ${v.variant}`);
+  }
+  return fn(v as Extract<T, { variant: typeof v.variant }>);
 }
 
 export function capitalizeFirstLetter(str: string): Result<string> {

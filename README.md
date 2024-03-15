@@ -19,6 +19,8 @@ the advantages that Rust brings to the table into the world of TypeScript.
 Inspired by [this shorts video](https://www.youtube.com/shorts/3iWoNJbGO2U), I feel like it would be
 a quality of life advantage to have this feature addressed.
 
+It also has a code coverage of 100% 🔥.
+
 # Common Questions
 <details>
 <summary> Why not use `Effect` or `fp-ts`? </summary>
@@ -26,7 +28,7 @@ a quality of life advantage to have this feature addressed.
 If you are willing to learn the extra concepts, [Effect](https://effect.website/) or [fp-ts](https://gcanti.github.io/fp-ts/) _should_ be the choice of use while this library is still young.
 
 However, if you are okay with a 100% code coverage library even though it's still young, rustInterfaces has its set of advantages:
-- **Safe by default:** Making sure that the written code is safe is the first priority. The library empowers programmers to write safe code by producing `Result` types for core JavaScript functions, signaling when error handling is necessary, in contrast to the compiler’s assumption of pervasive try-catch blocks without explicit notifications.
+- **Safe by default:** Making sure that the written code is safe is the first priority. The library empowers programmers to write safe code by providing `Result` types for core JavaScript functions, signaling when error handling is necessary, in contrast to the compiler’s assumption of pervasive try-catch blocks without explicit notifications.
 - **Easier to learn:** One of the goals of rustInterfaces is to make it _easy_ to write safe code. While this may especially apply for people that code in Rust, the documentation aims to make it easy even for people without a Rust-based background.
 - **Easier to shift gears between FP-oriented projects:** If you had a Functional Programming (FP) project and had to shift to TypeScript to continue your project, or even if you had to switch from your Rust project to your `Effect`-integrated TypeScript project, chances are you might have a bit of lag and discomfort getting out of your programming flow to re-enter another one. This library aims to make the flow-shifting a lot more seamless.
 
@@ -61,7 +63,7 @@ Not necessarily. As with many problems, this problem has multiple solutions. The
 
 The truth is others _keep trying this_ even if it doesn't grow, and that this library is one of the many that decided to try making it work.
 
-My motivation isn't centered around getting others to use it. It's something that personally works for me: This API was born as an internal API in one of my private projects before it got generalized enough to be a library. I have been coding with it and have benefitted from it quite well. As a result, I'm more than happy to keep it growing.
+My motivation isn't centered around getting others to use it. **It's something that personally works for me**: This API was born as an internal API in one of my private projects before it got generalized enough to be a library. I have been coding with it and have benefitted from it quite well. As a result, I'm more than happy to keep it growing. What this means is that this library will inevitably grow into a large library irrespective of its adoption.
 
 PRs are still welcome! I still value everyone's opinion and will always be more than happy in making this work for whoever also wants to make it work.
 
@@ -70,12 +72,12 @@ PRs are still welcome! I still value everyone's opinion and will always be more 
 <details>
 <summary> It's great that you will keep growing this, okay sure, but what does this offer differently? </summary>
 
-One thing I noticed other APIs like this to do is that they provide an API for people to use but never _adapted it to be compatible with the core library_. This causes several issues:
+One thing I noticed other similar APIs do is that they provide an API for people to use but never _adapted it to be compatible with the core library_. This causes several issues:
 - People using both _otherSolution_ and the core-js library will have to spare more mental energy juggling through both concepts just to get code working. If one of them have to go, and if it can't be core-js...
 - There is no point in learning and shifting a codebase to an API that will take time to learn and doesn't even account for the most basic of situations
 - If a team wants to bring along the correctness of functional programming, they may as well just use something as fleshed-out as `Effect`, _even if it has an extra learning curve_.
 
-Thus what `rustInterfaces` aims to do differently is to provide API that works _as if it's integrated into the core-api_ within the client-side (and if it grows, then maybe on the server-side too).
+Thus what `rustInterfaces` aims to do differently is to **provide API that works _as if it's integrated into the core-api_** within the client-side (and if it grows, then maybe on the server-side too).
 
 </details>
 <br />
@@ -86,225 +88,38 @@ Thus what `rustInterfaces` aims to do differently is to provide API that works _
 
 **Optional:** Rename it to have the `tsx` extension if you want to include JSX.
 
-# Features
-## `match`
-Enables you to evaluate a value with multiple patterns and then run code depending on which pattern corresponds.
-
+# Quick Demonstration
+In TypeScript, this perfectly compiles:
 ```ts
-import { match } from "./rustInterfaces";
-
-type Animal = {
-    // String-based discriminated unions can always use `match`
-    kind: 'Land' | 'Water',
+interface Elephant {
     name: string
+    trunkLength: number
 }
+const url = 'http://nocodepanda.com/neofetch'
 
-const pet: Animal = {
-    kind: 'Land',
-    name: 'Alex the cat'
-}
-
-// This is where the match statement happens, notice how you can get a return value unlike `switch` statements
-const instruction = match( pet.kind, {
-    // You can either put a directly-addressed value
-    'Water': () => `Place ${pet.name} in the tank`,
-
-    // Or you can write program logic to compute special cases
-    'Land': () => {
-        if (pet.name === 'Alex the cat') {
-            console.log('Legendary animal found!');
-        }
-        return `Put ${pet.name} on the ground`;
+function logRes() {
+    try {
+        const elephantRes = await fetch(url);
+        const {name, trunkLength: len} = await elephantRes.json() as Elephant;
+        console.log(`elephant: ${name}, trunk length: ${len}cm`);
+    } catch (error) {
+        // Elaborate string explaining itself only when the program crashes
+        throw new Error(`Failed: ${error}`)
     }
-
-    // If all values are not matched, the linter will detect it
-});
-
-console.log(`What you should do: ${instruction}`);
-// Prints "What you should do: Put Alex the cat on the ground"
-```
-> **Important:** It is strongly recommended to use string literals
-> (like `'Land' | 'Water`) instead of variable strings when using `match()`, else the linter will
-> not detect it and thus may result in erroneous code being written.
-
-## `OptionT<T>`
-A replacement of `null`. Allows the user to safely handle variables that may initially have no value.
-
-This type is best instantiated using the `OptionBuilder` type.
-
-### Usage
-```ts
-import { match, OptionBuilder } from "./rustInterfaces";
-
-type CatFoods = 'Tuna' | 'Chicken' | 'Packeted Food'
-let plate = OptionBuilder.none<CatFoods>(); // Provides OptionT.None instance
-
-function handleFood() {
-    const msg = match( plate.variant, {
-        // Values with 'Some' will return the internal value when unwrapped
-        'Some': () => `Here eat your food: ${plate.unwrap()}`,
-        'None': () => 'No food here yet'
-    });
-
-    console.log(msg);
-}
-
-handleFood() // Prints 'No food here yet'
-
-// To update the option value you can use
-plate = OptionBuilder.some<CatFoods>('Tuna');
-
-handleFood(); // Prints 'Here eat your food: Tuna'
-
-// If you don't want to exhaustively check, you can still make safe `if`
-// statements
-let msg = 'Should not be printed';
-if (plate.variant === 'Some' && plate.unwrap() === 'Tuna') {
-    msg = "That sounds fishy!"
-}
-
-console.log(msg); // Prints 'That sounds fishy!'
-```
-
-## `Result<T, K>`
-Not all errors necessitate the complete halt of a program. There are instances where a function’s failure is due to an issue that can be readily understood and addressed.
-
-The `Result<T, K>` construct is designed to manage scenarios where a program encounters a failure that is not critical.
-
-You can use `match` on `resultVariable.variant` to get either:
-- `Ok`: the function call successfully worked, or
-- `Err`: the function call failed
-
-allowing your code to decide what to do in each scenario.
-
-While both variants can use `resultVariable.unwrap()`, it is recommended to not use it knowingly before `resultVariable.variant` has been confirmed to be a `'Some'` value
-
-Examples will be shown below in `parsers`.
-
-## `parsers`
-Provides functions that safely execute and return the `Result<T, K>` variants of in-built parsing.
-
-### `parsers.parseHtml`
-Parses a HTML string. Returns either:
-#### Success-case: `Result.Ok<Doc>`
-```ts
-{
-    variant: 'Ok',
-    unwrap: fn() => Doc
 }
 ```
-Where `Doc` is a [HTML document](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDocument) element
+The programmer is expected to know what is going on here and supposedly handle
+every error case with only the error's description as context. If you put try-catch blocks everywhere, you
+sacrifice the readability of the program. It's either too complicated to read or error-prone.
 
-#### Failure-case: `Result.Err`
-Representing that the html string could not be parsed
-```ts
-{
-    variant: 'Err',
-    unwrap: fn() => never // Panics in this case
-}
-```
+It's as if this implementation is waiting for you to write an erroneous
+program so that you can crash it and deal with it. Why not start by writing safer code instead and handle potential issues from there?
 
-#### Usage:
-```ts
-import { match, parsers } from "./rustInterfaces";
 
-const exampleHtmlString = '<h1> You are safe </h1>';
-const htmlRes = parsers.parseHtml(exampleHtmlString);
-const msg = match( htmlRes.variant, {
-    'Ok': () => {
-        // Safe to unwrap over here due to being `Ok` checked
-        const doc = htmlRes.unwrap() as Document
-        const message = doc.documentElement
-            ? doc.documentElement.textContent.trim()
-            : 'Nothing';
-        return `Found message: ${message}`;
-    },
-    'Err': () => 'No message found'
-})
 
-console.log(msg); // Prints 'Found message: You are safe'
-```
-
-### `parsers.parseJSON<T>`
-Parses a JSON string. Returns either:
-#### Success-case: `Result.Ok<T>`
-```ts
-{
-    variant: 'Ok',
-    unwrap: fn() => T
-}
-```
-Where `T` is a user-defined object
-
-#### Failure-case: `Result.Err`
-```ts
-{
-    variant: 'Err',
-    unwrap: fn() => never // Panics in this case
-}
-```
-
-#### Usage:
-```ts
-import { match, parsers } from "./rustInterfaces";
-
-const jsonStr = `
-{
-    "name": "Jungle",
-    "population": 3000
-}`
-
-interface Habitat {
-    name: string,
-    population: number
-}
-const jsonRes = parsers.parseJSON<Habitat>(jsonStr)
-const msg = match( jsonRes.variant, {
-    'Ok': () => {
-        const {name, population} = jsonRes.unwrap();
-        return `${name} found with ${population} animals`;
-    },
-    'Err': () => 'Habitat parsing failed'
-})
-
-console.log(msg); // Prints 'Jungle found with 3000 animals'
-```
-
-## `net`
-Provides functions that safely execute in-built net-based operations.
-
-### `net.fetch<T>`
-Executes a fetch operation to get data from a back-end server as a `Result`
-
-#### Success-case: `Result.Ok<T>`
-```ts
-{
-    variant: 'Ok',
-    unwrap: fn() => T
-}
-```
-Where `T` is a user-defined object
-
-#### Failure-case: `Result.Err<'FetchError' | 'ResponseError'>`
-If the response can't be received, it returns:
-```ts
-{
-    variant: 'Err',
-    errKind: 'FetchError',
-    unwrap: fn() => never // Panics in this case
-}
-```
-
-If the response is received but the response status is not `.ok`, it returns:
-```ts
-{
-    variant: 'Err',
-    errKind: 'ResponseError',
-    unwrap: fn() => never // Panics in this case
-}
-```
-
-#### Usage:
+## What does rustInterfaces do?
+rustInterfaces provides interfaces (inspired from Rust, which was inspired from other languages) that make it easier to write error-proof code (testing is still encouraged!)
+while still being easy to read and understand. In rustInterfaces, the previous example would be done this way:
 ```ts
 import { match, net } from "./rustInterfaces";
 
@@ -316,18 +131,25 @@ const url = 'http://nocodepanda.com/neofetch'
 
 function logRes() {
     const elephantRes = await net.fetch<Elephant>(url);
+
+    // This returns a `Result` type that contains the fetch value only if successful
     if (elephantRes.variant === 'Ok') {
         const {name, trunkLength} = elephantRes.unwrap();
         console.log(`Found elephant named ${name} with trunkLength: ${trunkLength}cm`);
         return;
     }
 
-    // Early returns allows Result types to be inferred more precisely.
-    // In this case, it's inferred to be of type Result.Err<'FetchError' | `ResponseError`>
+    // - Early returns maximize typescript inference, narrowing down to Result.Err 
+    // - `match()` can cater to all relevant `errKind` states for the problem
+    // - Unlike `switch`, `match()` returns a value
     const msg = match( elephantRes.errKind, {
+        // Instead of returning a string like in this case, you can now
+        // handle each and every potential error
         FetchError: () => 'could not be received',
         ResponseError: () => 'was received but did not give `.ok`',
-    })
+        TextParseError: () => 'could not be parsed as text',
+        JsonParseError: () => 'could not be parsed as JSON'
+    });
 
     const dbgMessage = `Could not fetch because the response ${msg}`
     console.log(dbgMessage);
@@ -335,3 +157,17 @@ function logRes() {
 
 logRes(); // Prints 'Could not fetch because the response could not be received'
 ```
+Now you have multiple states that are understandable and easy to handle based on
+your program's use case.
+
+Where previously none of the errors would be assigned their own state, rustInterfaces allow you to handle each and every potential error state
+
+## But I want Rust's pattern matching too
+rustInterfaces has pattern matching via `vmatch`. It's usage can be seen in various places in the documentation:
+- [Using `vmatch` on the Result type](./docs/README.md#usage--vmatch-on-result)
+- [Using `vmatch` on the Option type](./docs/README.md#usage--vmatch-on-option)
+- [Using `vmatch` on your own types](./docs/README.md#vmatch)
+
+
+## Documentation
+See [the documentation file](./docs/README.md) for all the things that rustInterfaces offers.
