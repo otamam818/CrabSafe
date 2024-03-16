@@ -90,7 +90,7 @@ This type is best instantiated using the `OptionBuilder` type.
 
 ### Usage (+ vmatch on `Option`):
 ```ts
-import { match, OptionBuilder } from "./rustInterfaces";
+import { vmatch, OptionBuilder } from "./rustInterfaces";
 
 type CatFoods = 'Tuna' | 'Chicken' | 'Packeted Food'
 let plate = OptionBuilder.none<CatFoods>(); // Provides OptionT.None instance
@@ -174,7 +174,7 @@ If the html string could be parsed but could not be queried on
 
 #### Usage:
 ```ts
-import { match, parsers } from "./rustInterfaces";
+import { vmatch, parsers } from "./rustInterfaces";
 
 const exampleHtmlString = '<h1> You are safe </h1>';
 const htmlRes = parsers.parseHtml(exampleHtmlString);
@@ -212,7 +212,7 @@ Where `T` is a user-defined object
 
 #### Usage (+ vmatch on `Result`):
 ```ts
-import { match, parsers } from "./rustInterfaces";
+import { vmatch, parsers } from "./rustInterfaces";
 
 const jsonStr = `
 {
