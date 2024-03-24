@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.219.0/assert/mod.ts";
+import { assertEquals, fail } from "https://deno.land/std@0.219.0/assert/mod.ts";
 import { OptionBuilder, vmatch, match, parsers, net } from "./rustInterfaces.ts";
 
 Deno.test(function optionTest() {
@@ -159,4 +159,85 @@ Deno.test(function matchVariantWorks() {
     });
 
     assertEquals(msg, 'rectangle with width of 20');
+});
+
+Deno.test(function parsersTestObject() {
+    interface Dog {
+        age: number,
+        species: {
+            variant: string,
+            location: string
+        }
+    }
+    const someObj = {
+        age: 21,
+        species: {
+            variant: 'Golden Retriever',
+            location: 'Scotland'
+        }
+    }
+    let result = parsers.parseObject<Dog>(someObj, [
+     ['age', 'number'],
+     ['species', [
+       ['variant', 'string'],
+       ['location', 'string']
+     ]]
+    ]);
+
+    assertEquals(result.unwrap().age, 21);
+
+    result = parsers.parseObject<Dog>(someObj, [
+     ['age', 'number'],
+     ['species', []]
+    ]);
+
+    if (result.variant === 'Ok') {
+        fail("datatypes should not be empty arrays")
+    }
+
+    assertEquals(result.errKind, 'DataTypeSpecificationError')
+
+    result = parsers.parseObject<Dog>(someObj, [
+     ['age', 'string'],
+     ['species', [
+       ['variant', 'string'],
+       ['location', 'string']
+     ]]
+    ]);
+
+    if (result.variant === 'Ok') {
+        fail("Wrong datatypes should be caught")
+    }
+
+    assertEquals(result.errKind, 'TypeError')
+
+    result = parsers.parseObject<Dog>(someObj, [
+     // @ts-ignore forcing a fail
+     ['agex', 'number'],
+     ['species', [
+       ['variant', 'string'],
+       ['location', 'string']
+     ]]
+    ]);
+
+    if (result.variant === 'Ok') {
+        fail("Mismatching key values between object and validator array should be caught")
+    }
+
+    assertEquals(result.errKind, 'KeyMismatchError')
+
+    result = parsers.parseObject<Dog>(someObj, [
+     ['age', 'number'],
+     ['species', [
+       // For some reason TypeScript can't catch nested values
+       ['variantx', 'string'],
+       ['location', 'string']
+     ]]
+    ]);
+
+    if (result.variant === 'Ok') {
+        fail("Mismatching key values between object and validator array should be caught")
+    }
+
+    assertEquals(result.errKind, 'KeyMismatchError')
 });
