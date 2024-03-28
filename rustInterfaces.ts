@@ -63,10 +63,36 @@ export const OptionBuilder = {
    * @param value a value that can be either of type T, null or undefined
    * @returns A non-null, non-undefined version of T, which is either of variant `Some` or `None`
    */
-  fromNullable: function convertNullable<T>(value: T): OptionT<T> {
+  from: function convertNullable<T>(value: T | null | undefined): OptionT<T> {
     if (value === null || value === undefined) {
-      return OptionBuilder.none<T>();
+      return OptionBuilder.none();
     }
+
+    // If it's a non-object, it couldn't have been an `Option` type before this
+    if (typeof value !== 'object') {
+        return OptionBuilder.some(value);
+    }
+
+    // Check if it's already an `Option` type
+    if (['variant', 'unwrap'].every(key => key in value)) {
+        const candidate = value as object as {
+            unwrap: () => unknown,
+            variant: 'Some' | 'None',
+            value?: unknown
+        };
+
+        if (typeof candidate.unwrap === 'function') {
+            if (candidate.variant === 'Some' && 'value' in candidate) {
+                return OptionBuilder.some(candidate.value as T);
+            }
+
+            if (candidate.variant === 'None') {
+                return OptionBuilder.none();
+            }
+        }
+    }
+
+    // If it's not an option type, then it must be another type of value
     return OptionBuilder.some(value);
   }
 }
