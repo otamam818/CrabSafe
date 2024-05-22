@@ -327,48 +327,6 @@ function isOfType(
   }
 }
 
-export const net = {
-  fetch: async function fetchData<T>(
-    url: string,
-    mode: "String" | "JSON" = "JSON"
-  ): PResult<T, FetchErrors> {
-    try {
-      // Attempt to fetch data from the provided URL
-      const response = await fetch(url);
-      // Check if the response status is OK (status code 200-299)
-      if (!response.ok) {
-        return ResultBuilder.err("ResponseError");
-      }
-
-      // Attempt to parse the response body
-      type ParseErrors = "JsonParseError" | "TextParseError";
-      return await match(mode, {
-        JSON: async () => {
-          try {
-            return ResultBuilder.ok<T>((await response.json()) as T);
-          } catch {
-            return ResultBuilder.err("JsonParseError" as ParseErrors);
-          }
-        },
-        String: async () => {
-          try {
-            return ResultBuilder.ok<T>((await response.text()) as T);
-          } catch {
-            return ResultBuilder.err("TextParseError" as ParseErrors);
-          }
-        },
-      });
-    } catch (error) {
-      const State = "FetchError" as const;
-      const finErr = ResultBuilder.err<T, typeof State>(
-        State,
-        JSON.stringify(error)
-      );
-      return finErr;
-    }
-  },
-};
-
 export function panic(errorMessage: string): never {
   throw new Error(errorMessage);
 }
