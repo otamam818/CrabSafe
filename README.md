@@ -2,7 +2,7 @@
     <img src='./images/Crabbie.png' style="width: 150px; height: 150px;">
 </p>
 
-<h1 align=center> Rust Interfaces </h1>
+<h1 align=center> 🦀 Safe </h1>
 
 Are you a Rustacean who also codes in TypeScript? And do you feel like 
 TypeScript doesn't provide the same feeling of safety that Rust does?
@@ -27,9 +27,9 @@ It also has a code coverage of 100% 🔥.
 
 If you are willing to learn the extra concepts, [Effect](https://effect.website/) or [fp-ts](https://gcanti.github.io/fp-ts/) _should_ be the choice of use while this library is still young.
 
-However, if you are okay with a 100% code coverage library even though it's still young, rustInterfaces has its set of advantages:
+However, if you are okay with a 100% code coverage library even though it's still young, crabSafe has its set of advantages:
 - **Safe by default:** Making sure that the written code is safe is the first priority. The library empowers programmers to write safe code by providing `Result` types for core JavaScript functions, signaling when error handling is necessary, in contrast to the compiler’s assumption of pervasive try-catch blocks without explicit notifications.
-- **Easier to learn:** One of the goals of rustInterfaces is to make it _easy_ to write safe code. While this may especially apply for people that code in Rust, the documentation aims to make it easy even for people without a Rust-based background.
+- **Easier to learn:** One of the goals of crabSafe is to make it _easy_ to write safe code. While this may especially apply for people that code in Rust, the documentation aims to make it easy even for people without a Rust-based background.
 - **Easier to shift gears between FP-oriented projects:** If you had a Functional Programming (FP) project and had to shift to TypeScript to continue your project, or even if you had to switch from your Rust project to your `Effect`-integrated TypeScript project, chances are you might have a bit of lag and discomfort getting out of your programming flow to re-enter another one. This library aims to make the flow-shifting a lot more seamless.
 
 </details>
@@ -41,7 +41,7 @@ What if you could get all the benefits of null-checks and _also_ methods that he
 
 Besides null-safety, this library also leverages TypeScript to provide `Result` types that helps the programmer handle different kinds of errors based on the different _states_ that the error originates from.
 
-What `rustInterfaces` is trying to do is to provide interfaces that help programmers _maximize_ TypeScript's safety features, not undermine them.
+What `crabSafe` is trying to do is to provide interfaces that help programmers _maximize_ TypeScript's safety features, not undermine them.
 
 </details>
 
@@ -77,12 +77,14 @@ One thing I noticed other similar APIs do is that they provide an API for people
 - There is no point in learning and shifting a codebase to an API that will take time to learn and doesn't even account for the most basic of situations
 - If a team wants to bring along the correctness of functional programming, they may as well just use something as fleshed-out as `Effect`, _even if it has an extra learning curve_.
 
-Thus what `rustInterfaces` aims to do differently is to **provide API that works _as if it's integrated into the core-api_** within the client-side (and if it grows, then maybe on the server-side too).
+Thus what `crabSafe` aims to do differently is to **provide API that works _as if it's integrated into the core-api_** within the client-side (and if it grows, then maybe on the server-side too).
 
 </details>
 <br />
 
 # Setup
+An installer is being made for this, but for now, feel free to use `rustInterfaces`,
+the previous version:
 1. Copy the `rustInterfaces.ts` file into your environment wherever you want to use it.
 2. Remove the `import { DOMParser, Document }` statement if you are using it in client-side code or non-deno code
 
@@ -117,11 +119,11 @@ program so that you can crash it and deal with it. Why not start by writing safe
 
 
 
-## What does rustInterfaces do?
-rustInterfaces provides interfaces (inspired from Rust, which was inspired from other languages) that make it easier to write error-proof code (testing is still encouraged!)
-while still being easy to read and understand. In rustInterfaces, the previous example would be done this way:
+## What does crabSafe do?
+crabSafe provides interfaces (inspired from Rust, which was inspired from other languages) that make it easier to write error-proof code (testing is still encouraged!)
+while still being easy to read and understand. In crabSafe, the previous example would be done this way:
 ```ts
-import { match, net } from "./rustInterfaces";
+import { match, net } from "./crabSafe";
 
 interface Elephant {
     name: string
@@ -160,14 +162,14 @@ logRes(); // Prints 'Could not fetch because the response could not be received'
 Now you have multiple states that are understandable and easy to handle based on
 your program's use case.
 
-Where previously none of the errors would be assigned their own state, rustInterfaces allow you to handle each and every potential error state
+Where previously none of the errors would be assigned their own state, crabSafe allow you to handle each and every potential error state
 
 ## But I want Rust's pattern matching too
-rustInterfaces has pattern matching via `vmatch`. It's usage can be seen in various places in the documentation:
+crabSafe has pattern matching via `vmatch`. It's usage can be seen in various places in the documentation:
 - [Using `vmatch` on the Result type](./docs/README.md#usage--vmatch-on-result)
 - [Using `vmatch` on the Option type](./docs/README.md#usage--vmatch-on-option)
 - [Using `vmatch` on your own types](./docs/README.md#vmatch)
 
 
 ## Documentation
-See [the documentation file](./docs/README.md) for all the things that rustInterfaces offers.
+See [the documentation file](./docs/README.md) for all the things that crabSafe offers.

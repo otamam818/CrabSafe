@@ -1,3 +1,7 @@
+> **NOTE:** This uses the previous implementation of _crabSafe_, known as _rustInterfaces_.
+>           Every implementation here will still work if the **Setup** Section is followed.
+>           Once a migration is complete, this section will be deleted
+
 # Documentation
 ## `match`
 Enables you to evaluate a value with multiple patterns and then run code depending on which pattern corresponds.
