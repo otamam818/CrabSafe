@@ -1,0 +1,7 @@
+# Rust generic
+Cargo.lock
+target/
+
+# Project Specific
+copy-paste.json
+output/
