@@ -3,7 +3,7 @@ use std::{cell::RefCell, str::FromStr};
 use crate::models::{ProjectChoices, Runtime, ProjectBuilder, FeatureSet, Modularity, ChosenFeatures, Feature};
 
 use anyhow::Result;
-use inquire::{ Select, Text, MultiSelect };
+use inquire::{ Select, Text, MultiSelect, Confirm };
 use colored::Colorize;
 
 // Treat it like a preact-signal to avoid "prop drilling"
@@ -12,7 +12,7 @@ static mut CHOICES: RefCell<Option<ProjectChoices>> = RefCell::new(None);
 pub fn inquire_main(choices: ProjectChoices) -> Result<()> {
     println!(
         "Found previous configuration settings for {} project",
-        format!("{:?}", &choices.runtime).bright_cyan().bold()
+        format!("{:?}", &choices.runtime).bold().bright_cyan()
     );
 
     modify_choices(choices);
@@ -29,7 +29,7 @@ fn modify_choices(choices: ProjectChoices) {
 fn ask_next_steps() -> Result<()> {
     let options: Vec<&str> = vec![
         "❄ Modify Package",
-        "✖ Delete package",
+        "✖ Delete crabSafe",
     ];
 
     let message = "What would you like to do?";
@@ -37,7 +37,7 @@ fn ask_next_steps() -> Result<()> {
     use Runtime as R;
     match ans {
         Ok("❄ Modify Package") => handle_modify(),
-        Ok("✖ Delete package") => handle_delete(),
+        Ok("✖ Delete crabSafe") => handle_delete(),
         _ => panic!("An invalid option was chosen!"),
     };
 
@@ -60,20 +60,39 @@ fn handle_modify() {
         Ok("⮜ Go Back") => ask_next_steps().unwrap(),
         _ => panic!("An invalid option was chosen!"),
     };
-
-    todo!()
 }
 
 fn handle_delete() {
-    todo!()
+    let message = format!(
+        "{} {}\n  {} {}",
+        "WARN:".black().on_red(),
+        "Doing this will remove the entire crabSafe implementation",
+        "Are you sure you want to do this?",
+        "Enter decision".bold()
+    );
+    let ans = Confirm::new(&message)
+        .with_default(false)
+        .with_help_message("Make sure to remove all local implementations that depend on these methods!")
+        .prompt();
+
+    if let Ok(true) = ans {
+        let mut choices_signal = unsafe { CHOICES.borrow() };
+        let project_choices = choices_signal
+            .as_ref()
+            .unwrap();
+
+        crate::settings_finder::remove_completely(project_choices).unwrap();
+    }
 }
 
 fn handle_add() {
     // Turn this into a list of unadded modules
     let mut choices_signal = unsafe { CHOICES.borrow_mut() };
-    let init_features = choices_signal
-        .as_ref()
-        .unwrap()
+    let mut project_choices: &mut ProjectChoices = choices_signal
+        .as_mut()
+        .unwrap();
+
+    let init_features = project_choices
         .feature_set
         .get_feature_list();
 
@@ -90,16 +109,28 @@ fn handle_add() {
 
     use Feature as F;
     let fin_features: Vec<Feature> = ans.iter()
-       .map(|s| Feature::from_str(s).expect("Chosen Features couldn't be parsed"))
-       .collect();
+        .map(|s| Feature::from_str(s).expect("Chosen Features couldn't be parsed"))
+        .collect();
 
-    if let Some(mut project_choices) = choices_signal.as_mut() {
-        // It's okay to clone since the data is small in size
-        // And it's better to clone it before a bigger list is added to it
-        let features = [init_features, fin_features].concat();
+    let features = [init_features, fin_features].concat();
+
+    let message = format!(
+        "{} {}\n  {} {}",
+        "WARN:".black().on_yellow(),
+        "Doing this will overwrite the crabSafe implementation",
+        "Are you sure you want to do this?",
+        "Enter decision"
+    );
+    let ans = Confirm::new(&message)
+        .with_default(false)
+        .prompt();
+
+    if let Ok(true) = ans {
+        println!("{}", "Changing data".bright_green());
         project_choices.feature_set = ChosenFeatures::Custom { features };
-        *choices_signal = Some(project_choices.clone());
-    }
 
-    todo!()
+        // We no longer need to update choices signal as we will be
+        // passing project_choices one last time
+        project_choices.handle();
+    }
 }

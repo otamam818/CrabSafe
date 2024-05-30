@@ -24,3 +24,19 @@ fn main() {
 
     println!("Done!")
 }
+
+fn parse_path(chosen_directory: &str) -> (&str, &str) {
+    match chosen_directory.strip_suffix("/") {
+        Some(rem_path) => (rem_path, "/"),
+        None => match chosen_directory.strip_suffix("\\") {
+            Some(rem_path) => (rem_path, "\\"),
+
+            None => if chosen_directory.contains("/") {
+                    (chosen_directory, "/")
+                } else {
+                    (chosen_directory, "\\")
+                }
+        }
+    }
+}
+

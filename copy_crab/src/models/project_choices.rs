@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use super::*;
-use crate::ts_file_data::*;
+use crate::{parse_path, ts_file_data::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectChoices {
@@ -11,7 +11,7 @@ pub struct ProjectChoices {
 }
 
 impl ProjectChoices {
-    pub fn handle(self) -> anyhow::Result<()> {
+    pub fn handle(&self) -> anyhow::Result<()> {
         // Convert the feature set to the list of strings to use
         let relevant_files: Vec<(&str, String)> = self.feature_set
             .get_feature_list()
@@ -95,19 +95,4 @@ fn filter_out(lines: Vec<String>, exclude: &str) -> Vec<String> {
         .filter(|line| !line.contains(exclude))
         .map(|s| s.to_string())
         .collect()
-}
-
-fn parse_path(chosen_directory: &str) -> (&str, &str) {
-    match chosen_directory.strip_suffix("/") {
-        Some(rem_path) => (rem_path, "/"),
-        None => match chosen_directory.strip_suffix("\\") {
-            Some(rem_path) => (rem_path, "\\"),
-
-            None => if chosen_directory.contains("/") {
-                    (chosen_directory, "/")
-                } else {
-                    (chosen_directory, "\\")
-                }
-        }
-    }
 }

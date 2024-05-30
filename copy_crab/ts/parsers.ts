@@ -1,4 +1,6 @@
-// NOTE: Remove this if it's running in client-side/non-deno code
+/** @headers | Parsers
+ * @runtimes ["Deno", "ClientSide"]
+ */
 import { DOMParser, Document } from "https://deno.land/x/deno_dom@v0.1.45/deno-dom-wasm.ts";
 
 import { ResultBuilder, Result, Err } from "./result.ts";
