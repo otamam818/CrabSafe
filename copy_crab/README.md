@@ -40,7 +40,8 @@ cargo uninstall copy_crab
 
 ### Post-Installation
 - [X] Deno import handler
-- [X] Package modifier
+- [X] Package appender
+- [X] Package deleter
 - [ ] Deno Postgres Plugin Integration
 - [ ] Zod integration
 
