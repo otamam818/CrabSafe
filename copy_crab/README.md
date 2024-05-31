@@ -27,6 +27,12 @@ preferences
 That's it! Now if you want to modify Crab Safe, you just need to run `copy_crab`
 again from your project's root folder.
 
+## Uninstall / Remove
+Run the following command to remove it from your system completely:
+```bash
+cargo uninstall copy_crab
+```
+
 ## Roadmap
 ### Basic Installation
 - [X] Basic installation
