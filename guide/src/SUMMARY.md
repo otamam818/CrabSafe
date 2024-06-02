@@ -2,4 +2,6 @@
 
 [Introduction](./Introduction.md)
 
-- [Chapter 1: Embracing Advancements](./chapter_1.md)
+[Embracing Advancements](./embracing_advancements.md)
+
+- [Chapter 1: Algebraic Data Types](./chapter_1.md)
