@@ -238,9 +238,11 @@ get a value from it.
   is to never assign the _variant_ field to a string, as stated previously.
   Every other time, the linter will warn the developer of potentially erroneous
   code being written
-- The discriminated union always states which variants it has, allowing the
-  developer to quickly see what variants are assigned cater to each of them
-  accordingly
+- When revisiting the codebase, the developer only ever needs to look at the _type
+  declaration_ of the discriminated union or any `vmatch` statement that uses the
+  union and they can instantly recap what's going on with that part of the codebase.
+  No more do you need to juggle through thousands of class declarations to return to
+  developing productively
 - The discriminated union can be exported to JSON by default by using `JSON.parse`
   on it (separate chapter coming for this soon). This allows you to communicate
   with the back-end and other sources in a universally structured way
