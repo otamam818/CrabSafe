@@ -1,5 +1,5 @@
-# rustInterfaces Guide Book
-Welcome to the _rustInterfaces book_, a book that teaches you how to use the rustInterfaces
+# crabSafe Guide Book
+Welcome to the _crabSafe book_, a book that teaches you how to use the crabSafe
 library. This library helps you write reliable software by leveraging TypeScript's
 type system and using it in a way reminiscent of code written in
 [the Rust programming language](https://www.rust-lang.org/).
@@ -18,7 +18,7 @@ Many functional libraries (like [fp-ts](https://gcanti.github.io/fp-ts/)) and li
 error-handling (like [effect-ts](https://effect.website/)) implement their
 features by leveraging JavaScript's `class` syntax for creating safe code.
 
-On the other hand, rustInterfaces embraces JavaScript's `object` syntax for
+On the other hand, crabSafe embraces JavaScript's `object` syntax for
 achieving a simple and customizable codebase that focuses on safety.
 This comes with the advantage of letting the developer create full-stack applications with _the
 same TypeScript interfaces_ on both the back-end and the front-end, which brings several advantages:
